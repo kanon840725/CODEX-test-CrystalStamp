@@ -1,0 +1,1278 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crystal Stamp PDF</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202f;
+      --muted: #697386;
+      --line: rgba(69, 102, 136, .24);
+      --glass: rgba(255, 255, 255, .58);
+      --glass-strong: rgba(255, 255, 255, .78);
+      --aqua: #53c7ef;
+      --aqua-deep: #2577b9;
+      --mint: #69d5a3;
+      --rose: #f38caf;
+      --paper: #f7fbff;
+      --shadow: 0 18px 48px rgba(38, 75, 116, .22);
+      --inner: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 -1px 0 rgba(80, 121, 156, .16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: "Segoe UI", "Microsoft JhengHei", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 22% 0%, rgba(255, 255, 255, .95), transparent 30%),
+        linear-gradient(140deg, #e8f8ff 0%, #f9fdff 34%, #f3f6fb 68%, #e6fff3 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, .65) 0 1px, transparent 1px 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, .56) 0 1px, transparent 1px 100%);
+      background-size: 54px 54px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .45), transparent 78%);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 72px 1fr 28px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 254px 1fr auto;
+      align-items: center;
+      gap: 18px;
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, .72);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .92) 0%, rgba(230, 248, 255, .78) 45%, rgba(189, 232, 250, .55) 46%, rgba(255, 255, 255, .50) 100%);
+      box-shadow: 0 10px 34px rgba(45, 87, 132, .18), var(--inner);
+      backdrop-filter: blur(18px) saturate(1.5);
+      position: relative;
+      z-index: 3;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .96) 0 24%, rgba(112, 215, 242, .82) 25% 60%, rgba(42, 112, 177, .92) 100%);
+      border: 1px solid rgba(255, 255, 255, .82);
+      box-shadow: inset 0 3px 5px rgba(255, 255, 255, .92), inset 0 -7px 10px rgba(13, 84, 139, .26), 0 8px 18px rgba(20, 92, 148, .22);
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .brand-mark::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 6px;
+      width: 27px;
+      height: 13px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .82);
+      filter: blur(.2px);
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 750;
+      white-space: nowrap;
+      letter-spacing: 0;
+    }
+
+    .brand-subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .tool-group.center {
+      justify-content: center;
+    }
+
+    .crystal-button {
+      height: 40px;
+      padding: 0 14px;
+      border: 1px solid rgba(39, 114, 166, .34);
+      border-radius: 8px;
+      color: #0e3858;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .98) 0%, rgba(245, 253, 255, .88) 38%, rgba(140, 222, 246, .58) 39%, rgba(255, 255, 255, .72) 100%);
+      box-shadow: inset 0 2px 0 rgba(255, 255, 255, .94), inset 0 -5px 10px rgba(32, 134, 190, .16), 0 7px 15px rgba(55, 108, 158, .17);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+      min-width: 40px;
+    }
+
+    .crystal-button:hover {
+      border-color: rgba(25, 121, 181, .55);
+      transform: translateY(-1px);
+    }
+
+    .crystal-button:disabled {
+      opacity: .48;
+      cursor: default;
+      transform: none;
+    }
+
+    .crystal-button:active {
+      transform: translateY(1px);
+      box-shadow: inset 0 3px 10px rgba(40, 108, 160, .22);
+    }
+
+    .crystal-button.primary {
+      color: #fff;
+      border-color: rgba(11, 99, 158, .58);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .82) 0%, rgba(123, 220, 247, .88) 31%, rgba(36, 137, 205, .94) 32%, rgba(25, 101, 172, .98) 100%);
+      text-shadow: 0 1px 1px rgba(0, 46, 95, .38);
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+      display: inline-grid;
+      place-items: center;
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .zoom {
+      height: 40px;
+      min-width: 330px;
+      display: grid;
+      grid-template-columns: 32px 1fr 46px 60px;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .54);
+      box-shadow: var(--inner);
+    }
+
+    input[type="range"] {
+      accent-color: var(--aqua-deep);
+    }
+
+    input[type="number"] {
+      width: 100%;
+      height: 32px;
+      border: 1px solid rgba(70, 102, 132, .28);
+      border-radius: 7px;
+      padding: 0 8px;
+      background: rgba(255, 255, 255, .72);
+      color: var(--ink);
+    }
+
+    .layout {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 236px 1fr 286px;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 255, 255, .72);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(239, 249, 255, .48));
+      box-shadow: var(--shadow), var(--inner);
+      backdrop-filter: blur(18px) saturate(1.45);
+      overflow: hidden;
+    }
+
+    .side-panel,
+    .inspector {
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .panel-title {
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 750;
+      color: #2d4b65;
+      border-bottom: 1px solid rgba(70, 102, 132, .16);
+      background: linear-gradient(180deg, rgba(255, 255, 255, .68), rgba(219, 241, 252, .42));
+    }
+
+    .panel-body {
+      min-height: 0;
+      overflow: auto;
+      padding: 12px;
+    }
+
+    .pages {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .page-tab,
+    .asset-tile {
+      border: 1px solid rgba(68, 106, 140, .24);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .62);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 5px 12px rgba(52, 88, 120, .09);
+      cursor: pointer;
+    }
+
+    .page-tab {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      color: #2e4a61;
+    }
+
+    .page-tab.active,
+    .asset-tile.active {
+      border-color: rgba(19, 121, 184, .68);
+      box-shadow: 0 0 0 3px rgba(85, 201, 238, .20), inset 0 1px 0 rgba(255, 255, 255, .9);
+    }
+
+    .asset-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .asset-tile {
+      height: 72px;
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      min-width: 0;
+    }
+
+    .asset-preview {
+      width: 56px;
+      height: 52px;
+      border-radius: 7px;
+      background:
+        linear-gradient(45deg, rgba(117, 141, 165, .18) 25%, transparent 25% 75%, rgba(117, 141, 165, .18) 75%),
+        linear-gradient(45deg, rgba(117, 141, 165, .18) 25%, transparent 25% 75%, rgba(117, 141, 165, .18) 75%);
+      background-position: 0 0, 8px 8px;
+      background-size: 16px 16px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid rgba(70, 102, 132, .16);
+    }
+
+    .asset-preview img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .asset-name {
+      min-width: 0;
+      color: #263f55;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .asset-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 1fr;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .52), rgba(226, 238, 247, .34));
+      position: relative;
+    }
+
+    .document-scroll {
+      overflow: auto;
+      min-height: 0;
+      padding: 28px 24px 60px;
+    }
+
+    .empty-state {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: #456479;
+      font-weight: 650;
+    }
+
+    .empty-state .plate {
+      width: min(520px, 80%);
+      padding: 36px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, .78);
+      background: rgba(255, 255, 255, .48);
+      box-shadow: var(--inner), 0 16px 36px rgba(41, 82, 122, .12);
+    }
+
+    .document {
+      display: grid;
+      justify-items: center;
+      gap: 28px;
+    }
+
+    .page-shell {
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(255, 255, 255, .42);
+      box-shadow: 0 16px 36px rgba(22, 49, 77, .22);
+    }
+
+    .page-surface {
+      position: relative;
+      background: white;
+      border-radius: 2px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08);
+    }
+
+    .page-surface canvas {
+      display: block;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+    }
+
+    .stamp {
+      position: absolute;
+      touch-action: none;
+      transform-origin: center center;
+      cursor: move;
+      outline: 1px solid transparent;
+    }
+
+    .stamp img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .stamp.selected {
+      outline: 2px solid rgba(24, 142, 211, .88);
+      box-shadow: 0 0 0 4px rgba(75, 202, 239, .20);
+    }
+
+    .handle {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      right: -7px;
+      bottom: -7px;
+      border-radius: 50%;
+      border: 2px solid white;
+      background: var(--aqua-deep);
+      box-shadow: 0 2px 7px rgba(25, 77, 125, .28);
+      cursor: nwse-resize;
+      display: none;
+    }
+
+    .stamp.selected .handle {
+      display: block;
+    }
+
+    .form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label {
+      color: #35536a;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .checker {
+      border-radius: 8px;
+      border: 1px solid rgba(70, 102, 132, .16);
+      background:
+        linear-gradient(45deg, rgba(117, 141, 165, .14) 25%, transparent 25% 75%, rgba(117, 141, 165, .14) 75%),
+        linear-gradient(45deg, rgba(117, 141, 165, .14) 25%, transparent 25% 75%, rgba(117, 141, 165, .14) 75%);
+      background-position: 0 0, 8px 8px;
+      background-size: 16px 16px;
+      min-height: 96px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .checker img {
+      max-width: 100%;
+      max-height: 96px;
+      object-fit: contain;
+    }
+
+    .statusbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 14px;
+      color: #375468;
+      font-size: 12px;
+      border-top: 1px solid rgba(255, 255, 255, .72);
+      background: rgba(255, 255, 255, .46);
+      backdrop-filter: blur(12px);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1040px) {
+      .toolbar {
+        grid-template-columns: 1fr auto;
+      }
+
+      .tool-group.center {
+        display: none;
+      }
+
+      .layout {
+        grid-template-columns: 190px 1fr;
+      }
+
+      .inspector {
+        display: none;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        grid-template-rows: auto 1fr 28px;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+        padding: 8px;
+      }
+
+      .side-panel {
+        max-height: 170px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="toolbar">
+      <div class="brand" aria-label="Crystal Stamp PDF">
+        <div class="brand-mark"></div>
+        <div>
+          <div class="brand-title">Crystal Stamp PDF</div>
+          <div class="brand-subtitle">PDF 簽名與蓋章工具</div>
+        </div>
+      </div>
+
+      <div class="tool-group center">
+        <button class="crystal-button" id="openPdfButton" type="button"><span class="icon">□</span>開啟 PDF</button>
+        <button class="crystal-button" id="addImageButton" type="button"><span class="icon">＋</span>加入圖片</button>
+        <button class="crystal-button" id="addCheckButton" type="button"><span class="icon">✓</span>勾選</button>
+        <div class="zoom">
+          <span>縮放</span>
+          <input id="zoomInput" type="range" min="65" max="180" value="112">
+          <strong id="zoomValue">112%</strong>
+          <button class="crystal-button" id="fitWidthButton" type="button">同寬</button>
+        </div>
+      </div>
+
+      <div class="tool-group">
+        <button class="crystal-button primary" id="exportButton" type="button"><span class="icon">↓</span>輸出 PDF</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="panel side-panel">
+        <div class="panel-title">
+          <span>頁面與素材</span>
+          <button class="crystal-button" id="compactImageButton" type="button" title="加入圖片"><span class="icon">＋</span></button>
+        </div>
+        <div class="panel-body">
+          <div class="pages" id="pageList"></div>
+          <div class="asset-list" id="assetList"></div>
+        </div>
+      </aside>
+
+      <section class="panel workspace">
+        <div class="document-scroll" id="scrollArea">
+          <div class="empty-state" id="emptyState">
+            <div class="plate">開啟 PDF 後，Crystal Stamp PDF 會在這裡顯示文件。</div>
+          </div>
+          <div class="document hidden" id="documentView"></div>
+        </div>
+      </section>
+
+      <aside class="panel inspector">
+        <div class="panel-title">
+          <span>圖片設定</span>
+          <button class="crystal-button" id="deleteButton" type="button" title="刪除"><span class="icon">×</span></button>
+        </div>
+        <div class="panel-body">
+          <div class="form" id="inspectorForm">
+            <div class="checker" id="selectedPreview"><span class="small-note">尚未選取圖片</span></div>
+            <div class="field">
+              <label for="opacityInput">透明度</label>
+              <input id="opacityInput" type="range" min="10" max="100" value="100">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="widthInput">寬度</label>
+                <input id="widthInput" type="number" min="1" step="1">
+              </div>
+              <div class="field">
+                <label for="heightInput">高度</label>
+                <input id="heightInput" type="number" min="1" step="1">
+              </div>
+            </div>
+            <div class="field">
+              <label>旋轉</label>
+              <div class="button-row">
+                <button class="crystal-button" id="rotateLeftButton" type="button">逆時針 45°</button>
+                <button class="crystal-button" id="rotateRightButton" type="button">順時針 45°</button>
+              </div>
+            </div>
+            <div class="small-note" id="selectionMeta">選取頁面上的圖片後可調整細節。</div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="statusbar">
+      <span id="statusText">準備就緒</span>
+      <span id="countText">0 個圖片</span>
+    </footer>
+  </div>
+
+  <input id="pdfInput" type="file" accept="application/pdf" hidden>
+  <input id="imageInput" type="file" accept="image/png,image/jpeg" multiple hidden>
+
+  <script>
+    const state = {
+      pdfBytes: null,
+      pdfName: "",
+      pdfDoc: null,
+      pageInfo: new Map(),
+      pagesRendering: false,
+      currentPage: 1,
+      zoom: 1.12,
+      assets: [],
+      selectedAssetId: null,
+      stamps: [],
+      selectedStampId: null,
+      drag: null
+    };
+
+    const els = {
+      openPdfButton: document.getElementById("openPdfButton"),
+      addImageButton: document.getElementById("addImageButton"),
+      compactImageButton: document.getElementById("compactImageButton"),
+      addCheckButton: document.getElementById("addCheckButton"),
+      exportButton: document.getElementById("exportButton"),
+      pdfInput: document.getElementById("pdfInput"),
+      imageInput: document.getElementById("imageInput"),
+      zoomInput: document.getElementById("zoomInput"),
+      zoomValue: document.getElementById("zoomValue"),
+      fitWidthButton: document.getElementById("fitWidthButton"),
+      pageList: document.getElementById("pageList"),
+      assetList: document.getElementById("assetList"),
+      scrollArea: document.getElementById("scrollArea"),
+      emptyState: document.getElementById("emptyState"),
+      documentView: document.getElementById("documentView"),
+      statusText: document.getElementById("statusText"),
+      countText: document.getElementById("countText"),
+      selectedPreview: document.getElementById("selectedPreview"),
+      opacityInput: document.getElementById("opacityInput"),
+      widthInput: document.getElementById("widthInput"),
+      heightInput: document.getElementById("heightInput"),
+      rotateLeftButton: document.getElementById("rotateLeftButton"),
+      rotateRightButton: document.getElementById("rotateRightButton"),
+      deleteButton: document.getElementById("deleteButton"),
+      selectionMeta: document.getElementById("selectionMeta")
+    };
+
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+
+    const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const round = value => Math.round(value || 0);
+    const normalizeRotation = value => {
+      const snapped = Math.round(value / 45) * 45;
+      return ((snapped % 360) + 360) % 360;
+    };
+
+    function setStatus(text) {
+      els.statusText.textContent = text;
+      els.countText.textContent = `${state.stamps.length} 個圖片`;
+    }
+
+    function requireLibraries() {
+      if (!window.pdfjsLib || !window.PDFLib) {
+        throw new Error("PDF 工具尚未載入，請確認目前可以連線到 cdnjs 與 unpkg。");
+      }
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function dataUrlToBytes(dataUrl) {
+      const base64 = dataUrl.split(",")[1];
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    function imageSize(dataUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }
+
+    function selectedStamp() {
+      return state.stamps.find(stamp => stamp.id === state.selectedStampId) || null;
+    }
+
+    function selectedAsset() {
+      return state.assets.find(asset => asset.id === state.selectedAssetId) || null;
+    }
+
+    function assetForStamp(stamp) {
+      return state.assets.find(asset => asset.id === stamp.assetId) || null;
+    }
+
+    async function openPdf(file) {
+      requireLibraries();
+      if (!file) return;
+      setStatus("正在載入 PDF...");
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      state.pdfBytes = bytes;
+      state.pdfName = file.name.replace(/\.pdf$/i, "");
+      state.pdfDoc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+      state.pageInfo.clear();
+      state.currentPage = 1;
+      state.stamps = [];
+      state.selectedStampId = null;
+      await renderDocument();
+      setStatus(`已開啟 ${file.name}`);
+    }
+
+    async function addImages(files) {
+      if (!files || !files.length) return;
+      for (const file of files) {
+        if (!/^image\/(png|jpeg)$/.test(file.type)) continue;
+        const dataUrl = await fileToDataUrl(file);
+        const size = await imageSize(dataUrl);
+        const asset = {
+          id: uid(),
+          name: file.name,
+          type: file.type,
+          dataUrl,
+          naturalWidth: size.width,
+          naturalHeight: size.height
+        };
+        state.assets.push(asset);
+        state.selectedAssetId = asset.id;
+      }
+      renderAssets();
+      if (state.pdfDoc && selectedAsset()) {
+        addStamp(state.currentPage, selectedAsset());
+      }
+      setStatus(`已加入 ${files.length} 個圖片素材`);
+    }
+
+    function addCheckAsset() {
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="180" height="160" viewBox="0 0 180 160">
+          <path d="M35 83 L72 121 L147 39" fill="none" stroke="#159c71" stroke-width="23" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M35 83 L72 121 L147 39" fill="none" stroke="rgba(255,255,255,.72)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+      const dataUrl = `data:image/svg+xml;base64,${btoa(svg)}`;
+      const asset = {
+        id: uid(),
+        name: "綠色勾選",
+        type: "image/png",
+        dataUrl,
+        naturalWidth: 180,
+        naturalHeight: 160,
+        svgSource: svg
+      };
+      state.assets.push(asset);
+      state.selectedAssetId = asset.id;
+      renderAssets();
+      if (state.pdfDoc) addStamp(state.currentPage, asset, 54);
+    }
+
+    function renderPagesList() {
+      els.pageList.innerHTML = "";
+      const count = state.pdfDoc ? state.pdfDoc.numPages : 0;
+      for (let page = 1; page <= count; page += 1) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `page-tab${page === state.currentPage ? " active" : ""}`;
+        button.innerHTML = `<span>第 ${page} 頁</span><strong>${state.stamps.filter(stamp => stamp.page === page).length}</strong>`;
+        button.addEventListener("click", () => {
+          state.currentPage = page;
+          document.querySelector(`[data-page-shell="${page}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+          renderPagesList();
+        });
+        els.pageList.appendChild(button);
+      }
+    }
+
+    function renderAssets() {
+      els.assetList.innerHTML = "";
+      for (const asset of state.assets) {
+        const tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = `asset-tile${asset.id === state.selectedAssetId ? " active" : ""}`;
+        tile.innerHTML = `
+          <div class="asset-preview"><img src="${asset.dataUrl}" alt=""></div>
+          <div>
+            <div class="asset-name">${escapeHtml(asset.name)}</div>
+            <div class="asset-meta">${asset.naturalWidth} x ${asset.naturalHeight}</div>
+          </div>`;
+        tile.addEventListener("click", () => {
+          state.selectedAssetId = asset.id;
+          renderAssets();
+          if (state.pdfDoc) addStamp(state.currentPage, asset);
+        });
+        els.assetList.appendChild(tile);
+      }
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function getScrollAnchor() {
+      const shell = document.querySelector(`[data-page-shell="${state.currentPage}"]`) || document.querySelector(".page-shell");
+      if (!shell) return { page: state.currentPage, ratio: 0 };
+      const ratio = clamp((els.scrollArea.scrollTop - shell.offsetTop) / Math.max(1, shell.offsetHeight), 0, 1);
+      return { page: Number(shell.dataset.pageShell) || state.currentPage, ratio };
+    }
+
+    function restoreScrollAnchor(anchor) {
+      if (!anchor) return;
+      const shell = document.querySelector(`[data-page-shell="${anchor.page}"]`);
+      if (!shell) return;
+      els.scrollArea.scrollTop = shell.offsetTop + shell.offsetHeight * anchor.ratio;
+      state.currentPage = anchor.page;
+      renderPagesList();
+    }
+
+    async function renderDocument(anchor) {
+      if (!state.pdfDoc) return;
+      if (state.pagesRendering) {
+        renderDocument.pendingAnchor = anchor || getScrollAnchor();
+        return;
+      }
+      state.pagesRendering = true;
+      const zoomForRender = state.zoom;
+      els.emptyState.classList.add("hidden");
+      els.documentView.classList.remove("hidden");
+      els.documentView.innerHTML = "";
+      renderPagesList();
+
+      for (let pageNum = 1; pageNum <= state.pdfDoc.numPages; pageNum += 1) {
+        await renderPage(pageNum, zoomForRender);
+      }
+
+      renderAllStamps();
+      setupPageObserver();
+      restoreScrollAnchor(anchor);
+      state.pagesRendering = false;
+      if (renderDocument.pendingAnchor || state.zoom !== zoomForRender) {
+        const pendingAnchor = renderDocument.pendingAnchor || anchor;
+        renderDocument.pendingAnchor = null;
+        await renderDocument(pendingAnchor);
+      }
+    }
+
+    async function renderPage(pageNum, zoom = state.zoom) {
+      const page = await state.pdfDoc.getPage(pageNum);
+      const unitViewport = page.getViewport({ scale: 1 });
+      state.pageInfo.set(pageNum, {
+        width: unitViewport.width,
+        height: unitViewport.height
+      });
+
+      const viewport = page.getViewport({ scale: zoom });
+      const shell = document.createElement("div");
+      shell.className = "page-shell";
+      shell.dataset.pageShell = pageNum;
+
+      const surface = document.createElement("div");
+      surface.className = "page-surface";
+      surface.dataset.page = pageNum;
+      surface.style.width = `${viewport.width}px`;
+      surface.style.height = `${viewport.height}px`;
+
+      const canvas = document.createElement("canvas");
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(viewport.width * dpr);
+      canvas.height = Math.floor(viewport.height * dpr);
+      canvas.style.width = `${viewport.width}px`;
+      canvas.style.height = `${viewport.height}px`;
+      const context = canvas.getContext("2d");
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      await page.render({ canvasContext: context, viewport }).promise;
+
+      const overlay = document.createElement("div");
+      overlay.className = "overlay";
+      overlay.dataset.overlay = pageNum;
+      overlay.addEventListener("pointerdown", event => {
+        if (event.target === overlay) {
+          state.selectedStampId = null;
+          updateSelectionUi();
+          renderAllStamps();
+        }
+      });
+
+      surface.append(canvas, overlay);
+      shell.append(surface);
+      els.documentView.appendChild(shell);
+    }
+
+    function rerenderDocumentSoon(anchor = getScrollAnchor()) {
+      window.clearTimeout(rerenderDocumentSoon.timer);
+      rerenderDocumentSoon.timer = window.setTimeout(async () => {
+        if (state.pdfDoc) await renderDocument(anchor);
+      }, 120);
+    }
+
+    function setZoomPercent(percent) {
+      const next = clamp(Math.round(percent), Number(els.zoomInput.min), Number(els.zoomInput.max));
+      state.zoom = next / 100;
+      els.zoomInput.value = next;
+      els.zoomValue.textContent = `${next}%`;
+    }
+
+    function fitWidth() {
+      if (!state.pdfDoc) return;
+      const info = state.pageInfo.get(state.currentPage) || [...state.pageInfo.values()][0];
+      if (!info) return;
+      const available = els.scrollArea.clientWidth - 72;
+      setZoomPercent((available / info.width) * 100);
+      rerenderDocumentSoon(getScrollAnchor());
+    }
+
+    function renderAllStamps() {
+      document.querySelectorAll(".overlay").forEach(overlay => {
+        overlay.innerHTML = "";
+      });
+
+      for (const stamp of state.stamps) {
+        const overlay = document.querySelector(`[data-overlay="${stamp.page}"]`);
+        const info = state.pageInfo.get(stamp.page);
+        if (!overlay || !info) continue;
+        const asset = assetForStamp(stamp);
+        if (!asset) continue;
+        const scale = overlay.clientWidth / info.width;
+        const el = document.createElement("div");
+        el.className = `stamp${stamp.id === state.selectedStampId ? " selected" : ""}`;
+        el.dataset.stamp = stamp.id;
+        el.style.left = `${stamp.x * scale}px`;
+        el.style.top = `${stamp.y * scale}px`;
+        el.style.width = `${stamp.width * scale}px`;
+        el.style.height = `${stamp.height * scale}px`;
+        el.style.opacity = stamp.opacity;
+        el.style.transform = `rotate(${stamp.rotation}deg)`;
+        el.innerHTML = `<img src="${asset.dataUrl}" alt=""><span class="handle"></span>`;
+        el.addEventListener("pointerdown", event => startStampPointer(event, stamp.id, "move"));
+        el.querySelector(".handle").addEventListener("pointerdown", event => startStampPointer(event, stamp.id, "resize"));
+        overlay.appendChild(el);
+      }
+
+      renderPagesList();
+      updateSelectionUi();
+      setStatus(state.pdfDoc ? `${state.pdfName || "PDF"} - 第 ${state.currentPage} 頁` : "準備就緒");
+    }
+
+    function addStamp(page, asset, preferredWidth) {
+      const info = state.pageInfo.get(page);
+      if (!info || !asset) return;
+      const aspect = asset.naturalHeight / Math.max(1, asset.naturalWidth);
+      const width = preferredWidth || clamp(info.width * .28, 96, 210);
+      const height = width * aspect;
+      const stamp = {
+        id: uid(),
+        page,
+        assetId: asset.id,
+        x: (info.width - width) / 2,
+        y: (info.height - height) / 2,
+        width,
+        height,
+        rotation: 0,
+        opacity: 1
+      };
+      state.stamps.push(stamp);
+      state.selectedStampId = stamp.id;
+      renderAllStamps();
+    }
+
+    function startStampPointer(event, stampId, mode) {
+      event.preventDefault();
+      event.stopPropagation();
+      const stamp = state.stamps.find(item => item.id === stampId);
+      const info = state.pageInfo.get(stamp.page);
+      const overlay = document.querySelector(`[data-overlay="${stamp.page}"]`);
+      if (!stamp || !info || !overlay) return;
+      state.selectedStampId = stampId;
+      const rect = overlay.getBoundingClientRect();
+      const scale = rect.width / info.width;
+      const pointer = {
+        x: (event.clientX - rect.left) / scale,
+        y: (event.clientY - rect.top) / scale
+      };
+      state.drag = {
+        mode,
+        stampId,
+        page: stamp.page,
+        startPointer: pointer,
+        startStamp: { ...stamp },
+        rect,
+        scale
+      };
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      updateSelectionUi();
+      renderAllStamps();
+    }
+
+    function pointerPosition(event, drag) {
+      return {
+        x: (event.clientX - drag.rect.left) / drag.scale,
+        y: (event.clientY - drag.rect.top) / drag.scale
+      };
+    }
+
+    window.addEventListener("pointermove", event => {
+      if (!state.drag) return;
+      const drag = state.drag;
+      const stamp = state.stamps.find(item => item.id === drag.stampId);
+      const info = state.pageInfo.get(drag.page);
+      if (!stamp || !info) return;
+      const pointer = pointerPosition(event, drag);
+      if (drag.mode === "move") {
+        stamp.x = clamp(drag.startStamp.x + pointer.x - drag.startPointer.x, -stamp.width * .8, info.width - stamp.width * .2);
+        stamp.y = clamp(drag.startStamp.y + pointer.y - drag.startPointer.y, -stamp.height * .8, info.height - stamp.height * .2);
+      }
+      if (drag.mode === "resize") {
+        const aspect = drag.startStamp.height / Math.max(1, drag.startStamp.width);
+        const nextWidth = clamp(pointer.x - drag.startStamp.x, 12, info.width * 1.5);
+        stamp.width = nextWidth;
+        stamp.height = nextWidth * aspect;
+      }
+      renderAllStamps();
+    });
+
+    window.addEventListener("pointerup", () => {
+      state.drag = null;
+    });
+
+    function updateSelectionUi() {
+      const stamp = selectedStamp();
+      const asset = stamp ? assetForStamp(stamp) : null;
+      els.deleteButton.disabled = !stamp;
+      for (const input of [els.opacityInput, els.widthInput, els.heightInput, els.rotateLeftButton, els.rotateRightButton]) {
+        input.disabled = !stamp;
+      }
+      if (!stamp || !asset) {
+        els.selectedPreview.innerHTML = `<span class="small-note">尚未選取圖片</span>`;
+        els.selectionMeta.textContent = "選取頁面上的圖片後可調整細節。";
+        return;
+      }
+      els.selectedPreview.innerHTML = `<img src="${asset.dataUrl}" alt="">`;
+      els.opacityInput.value = Math.round(stamp.opacity * 100);
+      els.widthInput.value = round(stamp.width);
+      els.heightInput.value = round(stamp.height);
+      els.selectionMeta.textContent = `第 ${stamp.page} 頁 - ${asset.name}`;
+    }
+
+    function mutateSelected(mutator) {
+      const stamp = selectedStamp();
+      if (!stamp) return;
+      mutator(stamp);
+      renderAllStamps();
+    }
+
+    els.openPdfButton.addEventListener("click", () => els.pdfInput.click());
+    els.addImageButton.addEventListener("click", () => els.imageInput.click());
+    els.compactImageButton.addEventListener("click", () => els.imageInput.click());
+    els.pdfInput.addEventListener("change", event => {
+      const file = event.target.files[0];
+      event.target.value = "";
+      openPdf(file).catch(showError);
+    });
+    els.imageInput.addEventListener("change", event => {
+      const files = [...event.target.files];
+      event.target.value = "";
+      addImages(files).catch(showError);
+    });
+    els.addCheckButton.addEventListener("click", addCheckAsset);
+
+    els.zoomInput.addEventListener("input", () => {
+      const anchor = getScrollAnchor();
+      setZoomPercent(Number(els.zoomInput.value));
+      rerenderDocumentSoon(anchor);
+    });
+    els.fitWidthButton.addEventListener("click", fitWidth);
+
+    els.opacityInput.addEventListener("input", () => mutateSelected(stamp => {
+      stamp.opacity = Number(els.opacityInput.value) / 100;
+    }));
+    els.widthInput.addEventListener("change", () => mutateSelected(stamp => {
+      const aspect = stamp.height / Math.max(1, stamp.width);
+      stamp.width = Math.max(1, Number(els.widthInput.value));
+      stamp.height = stamp.width * aspect;
+    }));
+    els.heightInput.addEventListener("change", () => mutateSelected(stamp => {
+      const aspect = stamp.width / Math.max(1, stamp.height);
+      stamp.height = Math.max(1, Number(els.heightInput.value));
+      stamp.width = stamp.height * aspect;
+    }));
+    els.rotateLeftButton.addEventListener("click", () => mutateSelected(stamp => {
+      stamp.rotation = normalizeRotation(stamp.rotation - 45);
+    }));
+    els.rotateRightButton.addEventListener("click", () => mutateSelected(stamp => {
+      stamp.rotation = normalizeRotation(stamp.rotation + 45);
+    }));
+    els.deleteButton.addEventListener("click", () => {
+      if (!state.selectedStampId) return;
+      state.stamps = state.stamps.filter(stamp => stamp.id !== state.selectedStampId);
+      state.selectedStampId = null;
+      renderAllStamps();
+    });
+
+    async function exportPdf() {
+      requireLibraries();
+      if (!state.pdfBytes) {
+        setStatus("請先開啟 PDF");
+        return;
+      }
+      setStatus("正在輸出 PDF...");
+      const { PDFDocument, degrees } = PDFLib;
+      const output = await PDFDocument.load(state.pdfBytes.slice());
+      const pages = output.getPages();
+      const embedded = new Map();
+
+      for (const stamp of state.stamps) {
+        const asset = assetForStamp(stamp);
+        const info = state.pageInfo.get(stamp.page);
+        const page = pages[stamp.page - 1];
+        if (!asset || !info || !page) continue;
+
+        let image = embedded.get(asset.id);
+        if (!image) {
+          if (asset.svgSource) {
+            image = await output.embedPng(await svgToPngBytes(asset.svgSource, asset.naturalWidth, asset.naturalHeight));
+          } else if (asset.type === "image/png") {
+            image = await output.embedPng(dataUrlToBytes(asset.dataUrl));
+          } else {
+            image = await output.embedJpg(dataUrlToBytes(asset.dataUrl));
+          }
+          embedded.set(asset.id, image);
+        }
+
+        const scaleX = page.getWidth() / info.width;
+        const scaleY = page.getHeight() / info.height;
+        page.drawImage(image, {
+          x: stamp.x * scaleX,
+          y: page.getHeight() - (stamp.y + stamp.height) * scaleY,
+          width: stamp.width * scaleX,
+          height: stamp.height * scaleY,
+          rotate: degrees(-stamp.rotation),
+          opacity: stamp.opacity
+        });
+      }
+
+      const bytes = await output.save();
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${state.pdfName || "CrystalStampPDF"}_stamped.pdf`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+      setStatus("PDF 已輸出");
+    }
+
+    function svgToPngBytes(svg, width, height) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const svgUrl = `data:image/svg+xml;base64,${btoa(svg)}`;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const context = canvas.getContext("2d");
+          context.clearRect(0, 0, width, height);
+          context.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(async blob => {
+            if (!blob) {
+              reject(new Error("無法建立勾選圖片。"));
+              return;
+            }
+            resolve(new Uint8Array(await blob.arrayBuffer()));
+          }, "image/png");
+        };
+        img.onerror = reject;
+        img.src = svgUrl;
+      });
+    }
+
+    els.exportButton.addEventListener("click", () => exportPdf().catch(showError));
+
+    function setupPageObserver() {
+      if (setupPageObserver.observer) setupPageObserver.observer.disconnect();
+      setupPageObserver.observer = new IntersectionObserver(entries => {
+        const visible = entries
+          .filter(entry => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+        const page = Number(visible.target.dataset.pageShell);
+        if (page && page !== state.currentPage) {
+          state.currentPage = page;
+          renderPagesList();
+        }
+      }, { root: els.scrollArea, threshold: [.35, .55, .75] });
+      document.querySelectorAll(".page-shell").forEach(shell => setupPageObserver.observer.observe(shell));
+    }
+
+    function showError(error) {
+      console.error(error);
+      setStatus(error.message || "發生錯誤");
+      alert(error.message || error);
+    }
+
+    document.addEventListener("dragover", event => {
+      event.preventDefault();
+    });
+
+    document.addEventListener("drop", event => {
+      event.preventDefault();
+      const files = [...event.dataTransfer.files];
+      const pdf = files.find(file => file.type === "application/pdf");
+      const images = files.filter(file => /^image\/(png|jpeg)$/.test(file.type));
+      if (pdf) openPdf(pdf).catch(showError);
+      if (images.length) addImages(images).catch(showError);
+    });
+
+    updateSelectionUi();
+  </script>
+</body>
+</html>
