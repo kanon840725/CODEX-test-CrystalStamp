@@ -1,2 +1,25 @@
 # Codex-test-Crystal-Stamp
-mini browser based app for inserting pisctures, signatures or even a check on your pdf list
+以瀏覽器為基礎的簡易pdf編輯軟體
+臨時需要在PDF上放圖片，甚至是補上簽名或補勾選清單，總不可能為了這點小功能買專業PDF編輯軟體吧?
+
+啟動方式
+--------
+雙擊 Run-CrystalStampPDF.cmd。
+
+目前功能
+--------
+- 開啟 PDF 並預覽頁面
+- 加入 JPG 或 PNG 圖片素材
+- 將圖片放到 PDF 頁面上
+- 拖曳、縮放圖片
+- 以 45 度為單位順時針或逆時針旋轉圖片
+- 調整透明度、位置與尺寸
+- 將頁面縮放到與閱讀區同寬
+- 加入內建勾選符號
+- 輸出一份新的 PDF
+
+注意事項
+--------
+- 這是視覺簽名/蓋章工具，不是具法律驗證鏈的數位簽章工具。
+- 主程式會透過 cdnjs 與 unpkg 載入 PDF 處理元件，因此第一次啟動需要網路。
+- 原始 PDF 不會被覆蓋，輸出時會下載成新的檔案。
